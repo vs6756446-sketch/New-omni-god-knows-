@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS HUB</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050508;
+    --glass: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.08);
+    --glass-hover: rgba(255,255,255,0.07);
+    --accent: #7c6bff;
+    --accent2: #00d4ff;
+    --accent3: #ff6b9d;
+    --text: #e8e8f0;
+    --muted: rgba(232,232,240,0.45);
+    --card-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; overflow-x:hidden; }
+
+  /* BG mesh */
+  body::before {
+    content:'';
+    position:fixed; inset:0; z-index:0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 20%, rgba(124,107,255,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 80% 80%, rgba(0,212,255,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 60% 10%, rgba(255,107,157,0.06) 0%, transparent 50%);
+    pointer-events:none;
+  }
+  body::after {
+    content:'';
+    position:fixed; inset:0; z-index:0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events:none; opacity:0.4;
+  }
+
+  .app { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; }
+
+  /* Header */
+  header {
+    padding: 20px 20px 0;
+    display:flex; align-items:center; justify-content:space-between;
+    animation: fadeDown 0.6s ease both;
+  }
+  .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:1.3rem; letter-spacing:0.15em; }
+  .logo span { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .logo small { font-size:0.55rem; font-weight:400; letter-spacing:0.3em; color:var(--muted); display:block; margin-top:-2px; }
+
+  .header-actions { display:flex; gap:8px; }
+  .icon-btn {
+    width:36px; height:36px; border-radius:10px;
+    background:var(--glass); border:1px solid var(--glass-border);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:1rem; transition:all 0.2s;
+    color:var(--muted);
+  }
+  .icon-btn:hover { background:var(--glass-hover); color:var(--text); border-color:var(--accent); }
+
+  /* Hero search */
+  .hero {
+    padding: 40px 20px 24px;
+    text-align:center;
+    animation: fadeUp 0.7s 0.1s ease both;
+  }
+  .hero h1 {
+    font-family:'Syne',sans-serif; font-weight:800;
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    line-height:1.1; margin-bottom:6px;
+  }
+  .hero h1 .g1 { background:linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.6) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .hero h1 .g2 { background:linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .hero p { color:var(--muted); font-size:0.82rem; margin-bottom:24px; }
+
+  .search-wrap { position:relative; max-width:600px; margin:0 auto; }
+  .search-box {
+    width:100%; padding:14px 50px 14px 18px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius:16px;
+    color:var(--text); font-family:'DM Sans',sans-serif; font-size:0.95rem;
+    outline:none; transition:all 0.3s;
+    backdrop-filter:blur(20px);
+  }
+  .search-box:focus {
+    border-color: var(--accent);
+    background: rgba(124,107,255,0.06);
+    box-shadow: 0 0 0 3px rgba(124,107,255,0.12), 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .search-box::placeholder { color:var(--muted); }
+  .search-btn {
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    width:32px; height:32px; border-radius:10px;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    font-size:0.9rem; color:#fff; transition:all 0.2s;
+  }
+  .search-btn:hover { transform:translateY(-50%) scale(1.08); }
+
+  /* Filter chips */
+  .chips { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:14px; }
+  .chip {
+    padding:5px 14px; border-radius:20px;
+    background:var(--glass); border:1px solid var(--glass-border);
+    font-size:0.75rem; cursor:pointer; transition:all 0.2s;
+    color:var(--muted); white-space:nowrap;
+  }
+  .chip.active, .chip:hover {
+    background: rgba(124,107,255,0.15);
+    border-color:var(--accent);
+    color:var(--text);
+  }
+  .chip.active { color:#fff; }
+
+  /* Main layout */
+  main { flex:1; padding:0 16px 80px; max-width:800px; margin:0 auto; width:100%; }
+
+  /* Section */
+  section { margin-bottom:28px; animation: fadeUp 0.5s ease both; }
+  .sec-header {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .sec-title {
+    font-family:'Syne',sans-serif; font-size:0.72rem; font-weight:700;
+    letter-spacing:0.2em; color:var(--muted); text-transform:uppercase;
+    display:flex; align-items:center; gap:6px;
+  }
+  .sec-title .dot {
+    width:6px; height:6px; border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 8px var(--accent);
+  }
+  .sec-action {
+    font-size:0.72rem; color:var(--accent); cursor:pointer;
+    background:none; border:none; font-family:'DM Sans',sans-serif;
+  }
+
+  /* Cards */
+  .card {
+    background:var(--glass);
+    border:1px solid var(--glass-border);
+    border-radius:16px;
+    backdrop-filter:blur(20px);
+    padding:14px 16px;
+    transition:all 0.25s;
+    cursor:pointer;
+    box-shadow:var(--card-shadow);
+  }
+  .card:hover {
+    background:var(--glass-hover);
+    border-color:rgba(124,107,255,0.3);
+    transform:translateY(-2px);
+    box-shadow:0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(124,107,255,0.1);
+  }
+
+  /* Sites grid */
+  .sites-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .site-card {
+    background:var(--glass);
+    border:1px solid var(--glass-border);
+    border-radius:14px;
+    padding:14px;
+    transition:all 0.25s;
+    cursor:pointer;
+    position:relative; overflow:hidden;
+    backdrop-filter:blur(16px);
+  }
+  .site-card::before {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(135deg, var(--site-color, var(--accent)) 0%, transparent 60%);
+    opacity:0.06; transition:opacity 0.25s;
+  }
+  .site-card:hover::before { opacity:0.12; }
+  .site-card:hover { border-color:var(--site-color, var(--accent)); transform:translateY(-2px); }
+  .site-icon { font-size:1.4rem; margin-bottom:8px; }
+  .site-name { font-family:'Syne',sans-serif; font-size:0.82rem; font-weight:700; margin-bottom:3px; }
+  .site-desc { font-size:0.7rem; color:var(--muted); line-height:1.4; }
+  .site-count {
+    position:absolute; top:10px; right:10px;
+    background:rgba(255,255,255,0.08); border-radius:8px;
+    padding:2px 8px; font-size:0.65rem; color:var(--muted);
+  }
+  .site-status {
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:0.65rem; margin-top:6px;
+  }
+  .status-dot { width:5px; height:5px; border-radius:50%; }
+  .status-dot.connected { background:#00ff88; box-shadow:0 0 6px #00ff88; }
+  .status-dot.disconnected { background:#ff6b6b; }
+  .status-dot.pending { background:#ffb347; }
+
+  /* Add site card */
+  .add-site-card {
+    border:1px dashed rgba(255,255,255,0.12);
+    border-radius:14px; padding:14px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:6px; cursor:pointer; transition:all 0.25s; min-height:100px;
+  }
+  .add-site-card:hover { border-color:var(--accent); background:rgba(124,107,255,0.06); }
+  .add-site-card span { font-size:1.2rem; opacity:0.4; }
+  .add-site-card p { font-size:0.7rem; color:var(--muted); text-align:center; }
+
+  /* Results list */
+  .result-item {
+    display:flex; gap:12px; align-items:flex-start;
+    padding:12px 14px;
+    background:var(--glass);
+    border:1px solid var(--glass-border);
+    border-radius:12px; margin-bottom:8px;
+    cursor:pointer; transition:all 0.2s;
+    backdrop-filter:blur(16px);
+  }
+  .result-item:hover { background:var(--glass-hover); border-color:rgba(124,107,255,0.3); }
+  .result-thumb {
+    width:42px; height:42px; border-radius:8px;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.1rem; flex-shrink:0;
+  }
+  .result-body { flex:1; min-width:0; }
+  .result-title { font-size:0.85rem; font-weight:500; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .result-meta { font-size:0.7rem; color:var(--muted); display:flex; gap:8px; align-items:center; }
+  .result-source {
+    padding:2px 7px; border-radius:6px;
+    background:rgba(124,107,255,0.15); color:var(--accent);
+    font-size:0.62rem; font-weight:600;
+  }
+
+  /* Notes */
+  .notes-area {
+    width:100%; background:rgba(255,255,255,0.03);
+    border:1px solid var(--glass-border); border-radius:14px;
+    padding:12px; color:var(--text); font-family:'DM Sans',sans-serif;
+    font-size:0.85rem; resize:none; outline:none; min-height:80px;
+    transition:border-color 0.2s; line-height:1.6;
+  }
+  .notes-area:focus { border-color:var(--accent); }
+  .notes-footer { display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
+  .notes-count { font-size:0.68rem; color:var(--muted); }
+  .save-btn {
+    padding:6px 16px; border-radius:8px;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    border:none; color:#fff; font-size:0.75rem; font-family:'DM Sans',sans-serif;
+    cursor:pointer; transition:opacity 0.2s;
+  }
+  .save-btn:hover { opacity:0.85; }
+
+  /* Saved notes list */
+  .note-pill {
+    background:var(--glass); border:1px solid var(--glass-border);
+    border-radius:10px; padding:10px 12px; margin-bottom:7px;
+    font-size:0.8rem; line-height:1.5; cursor:pointer;
+    transition:all 0.2s; position:relative;
+    backdrop-filter:blur(16px);
+  }
+  .note-pill:hover { border-color:rgba(124,107,255,0.3); }
+  .note-pill .note-time { font-size:0.65rem; color:var(--muted); margin-top:4px; }
+  .note-del { position:absolute; top:8px; right:10px; background:none; border:none; color:var(--muted); font-size:0.75rem; cursor:pointer; opacity:0; transition:opacity 0.2s; }
+  .note-pill:hover .note-del { opacity:1; }
+
+  /* Modal */
+  .modal-bg {
+    position:fixed; inset:0; z-index:100;
+    background:rgba(0,0,0,0.7); backdrop-filter:blur(8px);
+    display:flex; align-items:flex-end; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity 0.3s;
+  }
+  .modal-bg.open { opacity:1; pointer-events:all; }
+  .modal {
+    background: rgba(12,12,20,0.95);
+    border:1px solid var(--glass-border);
+    border-radius:24px 24px 0 0;
+    padding:24px 20px 40px;
+    width:100%; max-width:600px;
+    transform:translateY(40px); transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .modal-bg.open .modal { transform:translateY(0); }
+  .modal-handle { width:40px; height:4px; border-radius:2px; background:rgba(255,255,255,0.15); margin:0 auto 20px; }
+  .modal h3 { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; margin-bottom:4px; }
+  .modal p { font-size:0.78rem; color:var(--muted); margin-bottom:18px; }
+  .input-field {
+    width:100%; padding:12px 14px;
+    background:rgba(255,255,255,0.05); border:1px solid var(--glass-border);
+    border-radius:12px; color:var(--text); font-size:0.85rem;
+    font-family:'DM Sans',sans-serif; outline:none; margin-bottom:10px;
+    transition:border-color 0.2s;
+  }
+  .input-field:focus { border-color:var(--accent); }
+  .type-row { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px; }
+  .type-opt {
+    padding:8px; border-radius:10px; border:1px solid var(--glass-border);
+    background:var(--glass); text-align:center; cursor:pointer;
+    transition:all 0.2s; font-size:0.7rem; color:var(--muted);
+  }
+  .type-opt .ti { display:block; font-size:1.2rem; margin-bottom:4px; }
+  .type-opt.selected { border-color:var(--accent); background:rgba(124,107,255,0.15); color:var(--text); }
+  .connect-btn {
+    width:100%; padding:13px;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    border:none; border-radius:12px; color:#fff;
+    font-family:'Syne',sans-serif; font-size:0.85rem; font-weight:700;
+    cursor:pointer; letter-spacing:0.05em; transition:opacity 0.2s;
+  }
+  .connect-btn:hover { opacity:0.88; }
+
+  /* AI chat */
+  .ai-bar {
+    display:flex; gap:8px; align-items:center;
+    background:var(--glass); border:1px solid var(--glass-border);
+    border-radius:14px; padding:10px 14px;
+    backdrop-filter:blur(16px);
+  }
+  .ai-avatar {
+    width:30px; height:30px; border-radius:8px; flex-shrink:0;
+    background:linear-gradient(135deg, var(--accent), var(--accent3));
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.85rem;
+  }
+  .ai-input {
+    flex:1; background:none; border:none; color:var(--text);
+    font-family:'DM Sans',sans-serif; font-size:0.82rem; outline:none;
+  }
+  .ai-input::placeholder { color:var(--muted); }
+  .ai-send {
+    width:28px; height:28px; border-radius:8px; flex-shrink:0;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    font-size:0.8rem; color:#fff;
+  }
+  .ai-response {
+    margin-top:10px; padding:10px 14px;
+    background:rgba(124,107,255,0.07); border-radius:12px;
+    font-size:0.8rem; line-height:1.6; color:var(--text);
+    border-left:2px solid var(--accent);
+    display:none;
+  }
+  .ai-response.visible { display:block; animation:fadeUp 0.3s ease both; }
+  .ai-loading { display:flex; gap:4px; align-items:center; padding:4px 0; }
+  .ai-loading span {
+    width:5px; height:5px; border-radius:50%;
+    background:var(--accent); animation:pulse 1.2s infinite;
+  }
+  .ai-loading span:nth-child(2) { animation-delay:0.2s; }
+  .ai-loading span:nth-child(3) { animation-delay:0.4s; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position:fixed; bottom:0; left:0; right:0; z-index:10;
+    padding:10px 20px 20px;
+    background:linear-gradient(0deg, rgba(5,5,8,0.95) 0%, transparent 100%);
+  }
+  .nav-bar {
+    max-width:400px; margin:0 auto;
+    background:rgba(15,15,25,0.9);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:20px; padding:8px 12px;
+    display:flex; justify-content:space-around;
+    backdrop-filter:blur(20px);
+    box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  }
+  .nav-item {
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    cursor:pointer; padding:4px 12px; border-radius:12px;
+    transition:all 0.2s; color:var(--muted); font-size:0.6rem;
+    font-family:'DM Sans',sans-serif;
+  }
+  .nav-item .nav-icon { font-size:1.15rem; }
+  .nav-item.active { color:var(--text); background:rgba(124,107,255,0.15); }
+  .nav-item.active .nav-icon { filter:drop-shadow(0 0 6px var(--accent)); }
+
+  /* Pages */
+  .page { display:none; }
+  .page.active { display:block; animation:fadeUp 0.4s ease both; }
+
+  /* Empty state */
+  .empty {
+    text-align:center; padding:32px 16px; color:var(--muted);
+  }
+  .empty .ei { font-size:2rem; margin-bottom:8px; opacity:0.4; }
+  .empty p { font-size:0.78rem; line-height:1.6; }
+
+  /* Tag */
+  .tag {
+    display:inline-block; padding:2px 8px; border-radius:6px;
+    font-size:0.62rem; font-weight:600; margin-right:4px;
+    background:rgba(255,255,255,0.06); color:var(--muted);
+  }
+  .tag.movie { background:rgba(255,107,157,0.15); color:var(--accent3); }
+  .tag.media { background:rgba(0,212,255,0.12); color:var(--accent2); }
+  .tag.game { background:rgba(124,107,255,0.15); color:var(--accent); }
+  .tag.note { background:rgba(255,200,100,0.12); color:#ffc864; }
+  .tag.drive { background:rgba(0,200,120,0.12); color:#00c878; }
+
+  /* Animations */
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes pulse { 0%,100% { opacity:0.3; transform:scale(0.8); } 50% { opacity:1; transform:scale(1.2); } }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:2px; }
+
+  /* Toast */
+  .toast {
+    position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:rgba(20,20,35,0.95); border:1px solid var(--glass-border);
+    border-radius:12px; padding:10px 18px; font-size:0.78rem;
+    opacity:0; transition:all 0.3s; z-index:200; white-space:nowrap;
+    backdrop-filter:blur(16px);
+  }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* Web results */
+  .web-result {
+    padding:12px 14px;
+    background:var(--glass); border:1px solid var(--glass-border);
+    border-radius:12px; margin-bottom:8px; cursor:pointer; transition:all 0.2s;
+  }
+  .web-result:hover { border-color:rgba(0,212,255,0.3); }
+  .web-result .wr-source { font-size:0.65rem; color:var(--accent2); margin-bottom:3px; }
+  .web-result .wr-title { font-size:0.85rem; font-weight:500; margin-bottom:4px; }
+  .web-result .wr-snippet { font-size:0.75rem; color:var(--muted); line-height:1.5; }
+
+  .section-divider {
+    display:flex; align-items:center; gap:10px; margin:16px 0;
+  }
+  .section-divider span { font-size:0.65rem; color:var(--muted); letter-spacing:0.15em; white-space:nowrap; }
+  .section-divider::before, .section-divider::after {
+    content:''; flex:1; height:1px; background:var(--glass-border);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">
+      <span>NEXUS</span> HUB
+      <small>PERSONAL SEARCH ENGINE</small>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="openModal()" title="Add Site">＋</button>
+      <button class="icon-btn" onclick="showToast('⚙️ Settings coming soon')" title="Settings">⚙</button>
+    </div>
+  </header>
+
+  <!-- HOME PAGE -->
+  <div class="page active" id="page-home">
+    <div class="hero">
+      <h1><span class="g1">Your World.</span> <span class="g2">One Search.</span></h1>
+      <p>Search across all your saved sites, notes & the web</p>
+      <div class="search-wrap">
+        <input class="search-box" id="main-search" placeholder="Search movies, images, games, notes..." 
+               onkeydown="if(event.key==='Enter') runSearch()" oninput="liveFilter()">
+        <button class="search-btn" onclick="runSearch()">⌕</button>
+      </div>
+      <div class="chips">
+        <div class="chip active" onclick="filterChip(this,'all')">All</div>
+        <div class="chip" onclick="filterChip(this,'movie')">🎬 Movies</div>
+        <div class="chip" onclick="filterChip(this,'media')">🖼 Media</div>
+        <div class="chip" onclick="filterChip(this,'game')">🎮 Games</div>
+        <div class="chip" onclick="filterChip(this,'note')">📝 Notes</div>
+        <div class="chip" onclick="filterChip(this,'web')">🌐 Web</div>
+      </div>
+    </div>
+
+    <main>
+      <!-- Sites -->
+      <section id="sec-sites">
+        <div class="sec-header">
+          <div class="sec-title"><div class="dot"></div>Connected Sites</div>
+          <button class="sec-action" onclick="openModal()">+ Add</button>
+        </div>
+        <div class="sites-grid" id="sites-grid"></div>
+      </section>
+
+      <!-- Recent / Results -->
+      <section id="sec-results" style="display:none">
+        <div class="sec-header">
+          <div class="sec-title"><div class="dot" style="background:var(--accent2)"></div>Results</div>
+          <button class="sec-action" onclick="clearResults()">Clear</button>
+        </div>
+        <div id="results-list"></div>
+      </section>
+
+      <!-- Recent saves -->
+      <section id="sec-recent">
+        <div class="sec-header">
+          <div class="sec-title"><div class="dot" style="background:var(--accent3)"></div>Recent Saves</div>
+        </div>
+        <div id="recent-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- SEARCH PAGE -->
+  <div class="page" id="page-search">
+    <div style="padding:20px 16px 16px;">
+      <div class="search-wrap">
+        <input class="search-box" id="search-input2" placeholder="Search everything..." 
+               onkeydown="if(event.key==='Enter') runSearch2()">
+        <button class="search-btn" onclick="runSearch2()">⌕</button>
+      </div>
+      <div class="chips" style="justify-content:flex-start; margin-top:10px;">
+        <div class="chip active" onclick="filterChip2(this,'all')">All</div>
+        <div class="chip" onclick="filterChip2(this,'personal')">Personal</div>
+        <div class="chip" onclick="filterChip2(this,'web')">Web</div>
+      </div>
+    </div>
+    <main>
+      <div id="search-results2">
+        <div class="empty"><div class="ei">🔍</div><p>Type to search across your sites and the web</p></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- NOTES PAGE -->
+  <div class="page" id="page-notes">
+    <div style="padding:20px 16px 0;">
+      <div class="sec-title" style="margin-bottom:14px;"><div class="dot" style="background:#ffc864;"></div>Quick Notes</div>
+      <textarea class="notes-area" id="note-input" placeholder="Jot anything down... press Save"></textarea>
+      <div class="notes-footer">
+        <span class="notes-count" id="note-chars">0 chars</span>
+        <button class="save-btn" onclick="saveNote()">Save Note</button>
+      </div>
+    </div>
+    <main style="margin-top:16px;">
+      <div class="sec-title" style="margin-bottom:10px;"><div class="dot" style="background:var(--muted);"></div>Saved Notes</div>
+      <div id="notes-list"></div>
+    </main>
+  </div>
+
+  <!-- AI PAGE -->
+  <div class="page" id="page-ai">
+    <div style="padding:20px 16px 0;">
+      <div class="sec-title" style="margin-bottom:4px;"><div class="dot" style="background:var(--accent3);"></div>AI Assistant</div>
+      <p style="font-size:0.75rem;color:var(--muted);margin-bottom:16px;">Ask anything about your saved data</p>
+      <div class="ai-bar">
+        <div class="ai-avatar">✦</div>
+        <input class="ai-input" id="ai-query" placeholder="What movies did I save? Suggest similar..." 
+               onkeydown="if(event.key==='Enter') askAI()">
+        <button class="ai-send" onclick="askAI()">➤</button>
+      </div>
+      <div class="ai-response" id="ai-response"></div>
+    </div>
+    <main style="margin-top:20px;">
+      <div class="sec-title" style="margin-bottom:10px;"><div class="dot"></div>Suggested Queries</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <div class="chip" onclick="setAIQuery('What movies have I saved?')">🎬 My movies</div>
+        <div class="chip" onclick="setAIQuery('Show me my games list')">🎮 My games</div>
+        <div class="chip" onclick="setAIQuery('Summarize my notes')">📝 Summarize notes</div>
+        <div class="chip" onclick="setAIQuery('What should I watch next based on my saved movies?')">✨ What to watch</div>
+        <div class="chip" onclick="setAIQuery('Find anime in my saved list')">🌸 Anime list</div>
+        <div class="chip" onclick="setAIQuery('Give me game recommendations based on my list')">🕹 Game recs</div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <div class="sec-title" style="margin-bottom:10px;"><div class="dot" style="background:var(--accent2);"></div>Recent AI Chats</div>
+        <div id="ai-history"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <div class="nav-bar">
+      <div class="nav-item active" onclick="showPage('home',this)">
+        <span class="nav-icon">⌂</span>Hub
+      </div>
+      <div class="nav-item" onclick="showPage('search',this)">
+        <span class="nav-icon">⌕</span>Search
+      </div>
+      <div class="nav-item" onclick="showPage('notes',this)">
+        <span class="nav-icon">✎</span>Notes
+      </div>
+      <div class="nav-item" onclick="showPage('ai',this)">
+        <span class="nav-icon">✦</span>AI
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Site Modal -->
+<div class="modal-bg" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Connect a Site</h3>
+    <p>Add any GitHub Pages site — it will appear in your hub and be searchable</p>
+    <input class="input-field" id="site-name" placeholder="Site name (e.g. My Movies)">
+    <input class="input-field" id="site-url" placeholder="URL (e.g. https://username.github.io/movies)">
+    <input class="input-field" id="site-desc" placeholder="Short description (optional)">
+    <div class="type-row" id="type-row">
+      <div class="type-opt selected" onclick="selectType(this,'movie')" data-type="movie"><span class="ti">🎬</span>Movies</div>
+      <div class="type-opt" onclick="selectType(this,'media')" data-type="media"><span class="ti">🖼</span>Media</div>
+      <div class="type-opt" onclick="selectType(this,'game')" data-type="game"><span class="ti">🎮</span>Games</div>
+      <div class="type-opt" onclick="selectType(this,'other')" data-type="other"><span class="ti">🔗</span>Other</div>
+    </div>
+    <button class="connect-btn" onclick="addSite()">Connect Site</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── State ───────────────────────────────────────────────
+let state = {
+  sites: JSON.parse(localStorage.getItem('nexus_sites') || '[]'),
+  notes: JSON.parse(localStorage.getItem('nexus_notes') || '[]'),
+  items: JSON.parse(localStorage.getItem('nexus_items') || '[]'),
+  aiHistory: JSON.parse(localStorage.getItem('nexus_ai_history') || '[]'),
+  activeFilter: 'all',
+  activeFilter2: 'all',
+};
+
+function save() {
+  localStorage.setItem('nexus_sites', JSON.stringify(state.sites));
+  localStorage.setItem('nexus_notes', JSON.stringify(state.notes));
+  localStorage.setItem('nexus_items', JSON.stringify(state.items));
+  localStorage.setItem('nexus_ai_history', JSON.stringify(state.aiHistory));
+}
+
+// ─── Navigation ───────────────────────────────────────────
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  el.classList.add('active');
+  if (id === 'notes') renderNotes();
+  if (id === 'ai') renderAIHistory();
+  if (id === 'home') renderAll();
+}
+
+// ─── Sites ────────────────────────────────────────────────
+const typeConfig = {
+  movie: { icon:'🎬', color:'#ff6b9d' },
+  media: { icon:'🖼', color:'#00d4ff' },
+  game:  { icon:'🎮', color:'#7c6bff' },
+  other: { icon:'🔗', color:'#ffc864' },
+};
+
+function renderSites() {
+  const grid = document.getElementById('sites-grid');
+  let html = '';
+  
+  state.sites.forEach((s, i) => {
+    const cfg = typeConfig[s.type] || typeConfig.other;
+    html += `
+      <div class="site-card" style="--site-color:${cfg.color}" onclick="openSite('${s.url}')">
+        <span class="site-count">#${i+1}</span>
+        <div class="site-icon">${cfg.icon}</div>
+        <div class="site-name">${s.name}</div>
+        <div class="site-desc">${s.desc || s.url.replace('https://','')}</div>
+        <div class="site-status">
+          <div class="status-dot connected"></div>
+          <span style="font-size:0.62rem;color:var(--muted)">Connected</span>
+        </div>
+      </div>`;
+  });
+
+  html += `
+    <div class="add-site-card" onclick="openModal()">
+      <span>＋</span>
+      <p>Add GitHub Site</p>
+    </div>`;
+  
+  grid.innerHTML = html;
+}
+
+function openSite(url) {
+  window.open(url, '_blank');
+}
+
+let selectedType = 'movie';
+function selectType(el, type) {
+  document.querySelectorAll('.type-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedType = type;
+}
+
+function addSite() {
+  const name = document.getElementById('site-name').value.trim();
+  const url = document.getElementById('site-url').value.trim();
+  const desc = document.getElementById('site-desc').value.trim();
+  if (!name || !url) { showToast('⚠️ Name and URL required'); return; }
+  
+  state.sites.push({ name, url, desc, type: selectedType, added: Date.now() });
+  save(); closeModal(); renderAll();
+  showToast('✅ Site connected: ' + name);
+  
+  document.getElementById('site-name').value = '';
+  document.getElementById('site-url').value = '';
+  document.getElementById('site-desc').value = '';
+}
+
+// ─── Search ───────────────────────────────────────────────
+function filterChip(el, filter) {
+  document.querySelectorAll('.chips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  state.activeFilter = filter;
+  const q = document.getElementById('main-search').value.trim();
+  if (q) runSearch();
+}
+
+function filterChip2(el, filter) {
+  el.closest('.chips').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  state.activeFilter2 = filter;
+}
+
+function liveFilter() {
+  const q = document.getElementById('main-search').value.trim();
+  if (q.length > 1) runSearch();
+  else clearResults();
+}
+
+function runSearch() {
+  const q = document.getElementById('main-search').value.trim();
+  if (!q) return;
+  const results = searchLocal(q, state.activeFilter);
+  showResults(results, q);
+}
+
+function runSearch2() {
+  const q = document.getElementById('search-input2').value.trim();
+  if (!q) return;
+  const res = document.getElementById('search-results2');
+  const localResults = searchLocal(q, state.activeFilter2);
+  
+  let html = '';
+  if (localResults.length) {
+    html += `<div class="section-divider"><span>YOUR DATA</span></div>`;
+    localResults.forEach(r => { html += resultHTML(r); });
+  }
+  
+  if (state.activeFilter2 !== 'personal') {
+    html += `<div class="section-divider"><span>WEB SEARCH</span></div>`;
+    html += `<div class="web-result" onclick="window.open('https://search.brave.com/search?q=${encodeURIComponent(q)}','_blank')">
+      <div class="wr-source">brave.com/search</div>
+      <div class="wr-title">Search "${q}" on Brave</div>
+      <div class="wr-snippet">Open Brave Search for web results about: ${q}</div>
+    </div>`;
+    html += `<div class="web-result" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(q)}','_blank')">
+      <div class="wr-source">google.com</div>
+      <div class="wr-title">Search "${q}" on Google</div>
+      <div class="wr-snippet">Open Google Search for: ${q}</div>
+    </div>`;
+    html += `<div class="web-result" onclick="window.open('https://duckduckgo.com/?q=${encodeURIComponent(q)}','_blank')">
+      <div class="wr-source">duckduckgo.com</div>
+      <div class="wr-title">Search "${q}" on DuckDuckGo</div>
+      <div class="wr-snippet">Private search for: ${q}</div>
+    </div>`;
+  }
+  
+  res.innerHTML = html || '<div class="empty"><div class="ei">🔍</div><p>No results found</p></div>';
+}
+
+function searchLocal(q, filter) {
+  const ql = q.toLowerCase();
+  let results = [];
+  
+  // Search sites
+  if (filter === 'all' || ['movie','media','game','other'].includes(filter)) {
+    state.sites.forEach(s => {
+      if (filter !== 'all' && s.type !== filter) return;
+      if (s.name.toLowerCase().includes(ql) || (s.desc||'').toLowerCase().includes(ql) || s.url.toLowerCase().includes(ql)) {
+        results.push({ ...s, resultType: 'site' });
+      }
+    });
+  }
+
+  // Search notes
+  if (filter === 'all' || filter === 'note') {
+    state.notes.forEach(n => {
+      if (n.text.toLowerCase().includes(ql)) {
+        results.push({ name: n.text.slice(0,60)+'...', type:'note', text:n.text, time:n.time, resultType:'note' });
+      }
+    });
+  }
+
+  // Search items
+  state.items.forEach(item => {
+    if (filter !== 'all' && item.type !== filter) return;
+    if ((item.title||'').toLowerCase().includes(ql) || (item.tags||'').toLowerCase().includes(ql)) {
+      results.push({ ...item, resultType:'item' });
+    }
+  });
+
+  return results;
+}
+
+function resultHTML(r) {
+  const icons = { movie:'🎬', media:'🖼', game:'🎮', note:'📝', other:'🔗', site:'🌐' };
+  const icon = icons[r.type] || icons[r.resultType] || '📄';
+  const tagClass = r.type || 'other';
+  return `
+    <div class="result-item" onclick="${r.url ? `openSite('${r.url}')` : ''}">
+      <div class="result-thumb">${icon}</div>
+      <div class="result-body">
+        <div class="result-title">${r.name || r.title || 'Untitled'}</div>
+        <div class="result-meta">
+          <span class="tag ${tagClass}">${r.type || r.resultType}</span>
+          ${r.url ? `<span>${r.url.replace('https://','').split('/')[0]}</span>` : ''}
+          ${r.time ? `<span>${new Date(r.time).toLocaleDateString()}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function showResults(results, q) {
+  const sec = document.getElementById('sec-results');
+  const list = document.getElementById('results-list');
+  sec.style.display = 'block';
+  
+  if (!results.length) {
+    list.innerHTML = `
+      <div class="empty"><div class="ei">🔍</div><p>No local results for "${q}"</p></div>
+      <div class="web-result" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(q)}','_blank')">
+        <div class="wr-source">google.com</div>
+        <div class="wr-title">Search "${q}" on Google</div>
+        <div class="wr-snippet">No personal results found — search the web instead</div>
+      </div>`;
+    return;
+  }
+  
+  list.innerHTML = results.map(r => resultHTML(r)).join('');
+}
+
+function clearResults() {
+  document.getElementById('sec-results').style.display = 'none';
+  document.getElementById('results-list').innerHTML = '';
+  document.getElementById('main-search').value = '';
+}
+
+// ─── Notes ────────────────────────────────────────────────
+document.getElementById('note-input').addEventListener('input', function() {
+  document.getElementById('note-chars').textContent = this.value.length + ' chars';
+});
+
+function saveNote() {
+  const text = document.getElementById('note-input').value.trim();
+  if (!text) return;
+  state.notes.unshift({ text, time: Date.now(), id: Date.now() });
+  save();
+  document.getElementById('note-input').value = '';
+  document.getElementById('note-chars').textContent = '0 chars';
+  renderNotes();
+  showToast('✅ Note saved');
+}
+
+function renderNotes() {
+  const list = document.getElementById('notes-list');
+  if (!state.notes.length) {
+    list.innerHTML = '<div class="empty"><div class="ei">📝</div><p>No notes yet. Save your first one above.</p></div>';
+    return;
+  }
+  list.innerHTML = state.notes.map((n,i) => `
+    <div class="note-pill">
+      ${n.text.replace(/</g,'&lt;')}
+      <div class="note-time">${new Date(n.time).toLocaleString()}</div>
+      <button class="note-del" onclick="deleteNote(${i});event.stopPropagation()">✕</button>
+    </div>`).join('');
+}
+
+function deleteNote(i) {
+  state.notes.splice(i, 1);
+  save(); renderNotes();
+  showToast('🗑 Note deleted');
+}
+
+// ─── AI ───────────────────────────────────────────────────
+function setAIQuery(q) {
+  document.getElementById('ai-query').value = q;
+  askAI();
+}
+
+async function askAI() {
+  const query = document.getElementById('ai-query').value.trim();
+  if (!query) return;
+  
+  const respEl = document.getElementById('ai-response');
+  respEl.classList.add('visible');
+  respEl.innerHTML = '<div class="ai-loading"><span></span><span></span><span></span></div>';
+
+  // Build context from user data
+  const context = buildContext();
+  
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `You are a personal assistant for a user's NEXUS HUB — their personal search engine for their saved content. 
+Here is their current saved data:
+
+${context}
+
+Answer questions about their data helpfully, concisely. If they ask for recommendations, use their data as context. Keep responses under 150 words. Use emoji where natural.`,
+        messages: [{ role: 'user', content: query }]
+      })
+    });
+    
+    const data = await res.json();
+    const text = data.content?.[0]?.text || 'No response';
+    respEl.innerHTML = text.replace(/\n/g, '<br>');
+    
+    // Save to history
+    state.aiHistory.unshift({ q: query, a: text, time: Date.now() });
+    if (state.aiHistory.length > 10) state.aiHistory.pop();
+    save();
+    renderAIHistory();
+    
+  } catch(e) {
+    respEl.innerHTML = '⚠️ Could not connect to AI. Check your connection.';
+  }
+}
+
+function buildContext() {
+  let ctx = '';
+  if (state.sites.length) {
+    ctx += `CONNECTED SITES:\n` + state.sites.map(s => `- ${s.name} (${s.type}): ${s.url}`).join('\n') + '\n\n';
+  }
+  if (state.notes.length) {
+    ctx += `SAVED NOTES (${state.notes.length}):\n` + state.notes.slice(0,5).map(n => `- "${n.text.slice(0,100)}"`).join('\n') + '\n\n';
+  }
+  if (state.items.length) {
+    ctx += `SAVED ITEMS (${state.items.length}):\n` + state.items.slice(0,10).map(i => `- ${i.title} [${i.type}]`).join('\n') + '\n\n';
+  }
+  if (!ctx) ctx = 'User has not connected any sites or saved any content yet.';
+  return ctx;
+}
+
+function renderAIHistory() {
+  const el = document.getElementById('ai-history');
+  if (!state.aiHistory.length) {
+    el.innerHTML = '<div class="empty"><div class="ei">✦</div><p>No AI chats yet</p></div>';
+    return;
+  }
+  el.innerHTML = state.aiHistory.map(h => `
+    <div class="note-pill" style="border-color:rgba(124,107,255,0.2)">
+      <div style="font-size:0.72rem;color:var(--accent);margin-bottom:4px;">▸ ${h.q}</div>
+      <div style="font-size:0.78rem;color:var(--muted);line-height:1.5;">${h.a.slice(0,120)}${h.a.length>120?'...':''}</div>
+      <div class="note-time">${new Date(h.time).toLocaleString()}</div>
+    </div>`).join('');
+}
+
+// ─── Recent ───────────────────────────────────────────────
+function renderRecent() {
+  const el = document.getElementById('recent-list');
+  const all = [
+    ...state.sites.slice(-3).map(s => ({ ...s, resultType:'site' })),
+    ...state.notes.slice(0,2).map(n => ({ name:n.text.slice(0,50)+'...', type:'note', resultType:'note' }))
+  ];
+  
+  if (!all.length) {
+    el.innerHTML = '<div class="empty"><div class="ei">✦</div><p>Connect your GitHub sites and start saving notes to see them here</p></div>';
+    return;
+  }
+  el.innerHTML = all.map(r => resultHTML(r)).join('');
+}
+
+// ─── Modal ────────────────────────────────────────────────
+function openModal() { document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+// ─── Toast ────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── Render all ───────────────────────────────────────────
+function renderAll() {
+  renderSites();
+  renderRecent();
+}
+
+// ─── Init ─────────────────────────────────────────────────
+// Add demo data if first time
+if (!state.sites.length && !localStorage.getItem('nexus_init')) {
+  localStorage.setItem('nexus_init', '1');
+  showToast('👋 Welcome! Tap + to connect your first site');
+}
+
+renderAll();
+</script>
+</body>
+</html>
