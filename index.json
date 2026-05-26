@@ -1,179 +1,146 @@
 [
   {
-    "id": 1,
-    "domain": "wwe.com",
+    "domain": "github.blog",
+    "type": "image",
+    "title": "GitHub for Beginners: Getting started with Git and GitHub in VS Code",
+    "url": "https://github.blog/developer-skills/",
+    "desc": "Discover how to use VS Code to interact with GitHub and maintain your projects.",
+    "thumb": "https://github.blog/wp-content/uploads/2026/05/GIT901_THUMB_GFB_A-1.png?resize=800%2C425",
+    "id": 1
+  },
+  {
+    "domain": "github.blog",
     "type": "page",
-    "title": "WWE News, Results, Photos & Video - Official Site | WWEMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share OptionsMore Share Options",
-    "url": "https://wwe.com",
-    "desc": "No description",
-    "thumb": null
+    "title": "GitHub recognized as a Leader in the Gartner® Magic Quadrant™ for Enterprise AI Coding Agents for the third year in a row",
+    "url": "https://github.blog/ai-and-ml/",
+    "desc": "We are committed to empowering every developer by building an open, secure, and AI-powered platform that defines the future of software development.",
+    "thumb": null,
+    "id": 2
   },
   {
-    "id": 2,
-    "domain": "wwe.com",
+    "domain": "github.blog",
     "type": "image",
-    "title": "Home",
-    "url": "https://wwe.com/themes/custom/wwe_theme/logo.svg",
-    "desc": "",
-    "thumb": "https://wwe.com/themes/custom/wwe_theme/logo.svg"
+    "title": "Beyond the engine: 10 open source projects shaping how games actually get made",
+    "url": "https://github.blog/open-source/gaming/",
+    "desc": "Check out these 10 open source tools that help game developers create art, animation, levels, audio, dialogue, debug UIs, and engine-ready assets.",
+    "thumb": "https://github.blog/wp-content/uploads/2026/05/639edd29983f2d6a8dcb40b053416b222505bf0835096dea18d4af01202d0646-2400x1260-1.png?resize=400%2C212",
+    "id": 3
   },
   {
-    "id": 3,
-    "domain": "wwe.com",
-    "type": "image",
-    "title": "Watch on WWE Network",
-    "url": "https://wwe.com/f/styles/scaleto240with/public/all/2022/09/nav-Network-WWENetwork%402x--27641c123206feea4d9cfe8b2fa1406e.png",
-    "desc": "",
-    "thumb": "https://wwe.com/f/styles/scaleto240with/public/all/2022/09/nav-Network-WWENetwork%402x--27641c123206feea4d9cfe8b2fa1406e.png"
-  },
-  {
-    "id": 4,
-    "domain": "wwe.com",
-    "type": "image",
-    "title": "wwe.com image",
-    "url": "https://wwe.com/f/styles/scaleto240with/public/all/2025/01/netflixWWE_192x48--ab18e68e7aa037bceceac17f0fbe4bcd.png",
-    "desc": "",
-    "thumb": "https://wwe.com/f/styles/scaleto240with/public/all/2025/01/netflixWWE_192x48--ab18e68e7aa037bceceac17f0fbe4bcd.png"
-  },
-  {
-    "id": 5,
-    "domain": "wwe.com",
-    "type": "image",
-    "title": "Watch on Sony LIV ",
-    "url": "https://wwe.com/f/styles/scaleto240with/public/all/2023/01/nav-network-WatchOnSonyLiv-CTA-183x48--760f6aa68e476bb3003fc045c38705a0.png",
-    "desc": "",
-    "thumb": "https://wwe.com/f/styles/scaleto240with/public/all/2023/01/nav-network-WatchOnSonyLiv-CTA-183x48--760f6aa68e476bb3003fc045c38705a0.png"
-  },
-  {
-    "id": 6,
-    "domain": "wwe.com",
-    "type": "image",
-    "title": "Flow",
-    "url": "https://wwe.com/f/styles/scaleto240with/public/all/2023/01/nav-Network-Flow-CTA--f8b50f2dde73e4e7e185be36eeb510e5.png",
-    "desc": "",
-    "thumb": "https://wwe.com/f/styles/scaleto240with/public/all/2023/01/nav-Network-Flow-CTA--f8b50f2dde73e4e7e185be36eeb510e5.png"
-  },
-  {
-    "id": 7,
-    "domain": "youtube.com",
+    "domain": "github.blog",
     "type": "page",
-    "title": "YouTube",
-    "url": "https://youtube.com",
-    "desc": "Enjoy the videos and music you love, upload original content, and share it all with friends, family, and the world on YouTube.",
-    "thumb": "https://www.youtube.com/img/desktop/yt_1200.png"
-  },
-  {
-    "id": 8,
-    "domain": "youtube.com",
-    "type": "video",
-    "title": "youtube.com video",
-    "url": "https://accounts.google.com/ServiceLogin?service=youtube&uilel=3&passive=true&continue=https%3A%2F%2Fwww.youtube.com%2Fsignin%3Faction_handle_signin%3Dtrue%26app%3Ddesktop%26hl%3Den%26next%3D%252Fsignin_passive%26feature%3Dpassive&hl=en",
-    "desc": "Embedded video",
+    "title": "Building GitHub’s next chapter in accessibility",
+    "url": "https://github.blog/open-source/",
+    "desc": "Explore our update on GitHub’s accessibility strategy, and learn how you can join us in building a culture of accessibility.",
     "thumb": null,
-    "duration": "Video"
+    "id": 4
   },
   {
-    "id": 9,
-    "domain": "github.com/blog",
+    "domain": "github.blog",
     "type": "page",
-    "title": "Home - The GitHub BlogLinkedIn iconInstagram iconYouTube iconX iconTikTok iconTwitch iconGitHub icon",
-    "url": "https://github.com/blog",
-    "desc": "Updates, ideas, and inspiration from GitHub to help developers build and design software.",
-    "thumb": "https://github.blog/wp-content/uploads/2024/07/github-logo.png"
-  },
-  {
-    "id": 10,
-    "domain": "github.com/blog",
-    "type": "image",
-    "title": "github.com/blog image",
-    "url": "https://github.blog/wp-content/uploads/2024/06/AI-DarkMode-4.png?resize=800%2C425",
-    "desc": "",
-    "thumb": "https://github.blog/wp-content/uploads/2024/06/AI-DarkMode-4.png?resize=800%2C425"
-  },
-  {
-    "id": 11,
-    "domain": "github.com/blog",
-    "type": "image",
-    "title": "github.com/blog image",
-    "url": "https://github.blog/wp-content/uploads/2024/05/Enterprise-DarkMode-3.png?resize=800%2C425",
-    "desc": "",
-    "thumb": "https://github.blog/wp-content/uploads/2024/05/Enterprise-DarkMode-3.png?resize=800%2C425"
-  },
-  {
-    "id": 12,
-    "domain": "github.com/blog",
-    "type": "image",
-    "title": "github.com/blog image",
-    "url": "https://github.blog/wp-content/uploads/2024/07/Screenshot-2024-07-23-at-8.42.45%E2%80%AFAM.png?resize=800%2C425",
-    "desc": "",
-    "thumb": "https://github.blog/wp-content/uploads/2024/07/Screenshot-2024-07-23-at-8.42.45%E2%80%AFAM.png?resize=800%2C425"
-  },
-  {
-    "id": 13,
-    "domain": "github.com/blog",
-    "type": "image",
-    "title": "github.com/blog image",
-    "url": "https://github.blog/wp-content/uploads/2024/07/Screenshot-2024-07-23-at-8.43.47%E2%80%AFAM.png?resize=800%2C425",
-    "desc": "",
-    "thumb": "https://github.blog/wp-content/uploads/2024/07/Screenshot-2024-07-23-at-8.43.47%E2%80%AFAM.png?resize=800%2C425"
-  },
-  {
-    "id": 14,
-    "domain": "github.com/blog",
-    "type": "image",
-    "title": "github.com/blog image",
-    "url": "https://github.blog/wp-content/uploads/2024/07/Screenshot-2024-07-23-at-8.44.23%E2%80%AFAM.png?resize=800%2C425",
-    "desc": "",
-    "thumb": "https://github.blog/wp-content/uploads/2024/07/Screenshot-2024-07-23-at-8.44.23%E2%80%AFAM.png?resize=800%2C425"
-  },
-  {
-    "id": 15,
-    "domain": "github.com/blog",
-    "type": "video",
-    "title": "github.com/blog video",
-    "url": "https://www.youtube.com/embed/NFjz1AGKA4c?feature=oembed&autoplay=1",
-    "desc": "Embedded video",
+    "title": "Investigating unauthorized access to GitHub-owned repositories",
+    "url": "https://github.blog/security/",
+    "desc": "If any impact is discovered, customers will be notified via established incident response and notification channels.",
     "thumb": null,
-    "duration": "Video"
+    "id": 5
   },
   {
-    "id": 16,
-    "domain": "github.com/blog",
-    "type": "video",
-    "title": "github.com/blog video",
-    "url": "https://www.youtube.com/embed/NFjz1AGKA4c?feature=oembed&autoplay=1",
-    "desc": "Embedded video",
+    "domain": "github.blog",
+    "type": "page",
+    "title": "Changes to GitHub Copilot Individual plans",
+    "url": "https://github.blog/news-insights/company-news/",
+    "desc": "We’re making these changes to ensure a reliable and predictable experience for existing customers.",
     "thumb": null,
-    "duration": "Video"
+    "id": 8
   },
   {
-    "id": 17,
-    "domain": "github.com/blog",
-    "type": "video",
-    "title": "github.com/blog video",
-    "url": "https://www.youtube.com/embed/4-u6dUg6IJk?feature=oembed&autoplay=1",
-    "desc": "Embedded video",
-    "thumb": null,
-    "duration": "Video"
+    "domain": "github.blog",
+    "type": "image",
+    "title": "From latency to instant: Modernizing GitHub Issues navigation performance",
+    "url": "https://github.blog/engineering/architecture-optimization/from-latency-to-instant-modernizing-github-issues-navigation-performance/",
+    "desc": "How the GitHub Issues team used client-side caching, smart prefetching, and service workers to make navigation feel instant.",
+    "thumb": "https://github.blog/wp-content/uploads/2026/01/generic-mona-github.png?resize=800%2C425",
+    "id": 11
   },
   {
-    "id": 18,
-    "domain": "github.com/blog",
-    "type": "video",
-    "title": "github.com/blog video",
-    "url": "https://www.youtube.com/embed/t74ClffSUW0?feature=oembed&autoplay=1",
-    "desc": "Embedded video",
-    "thumb": null,
-    "duration": "Video"
+    "domain": "github.blog",
+    "type": "image",
+    "title": "How GitHub uses eBPF to improve deployment safety",
+    "url": "https://github.blog/engineering/infrastructure/how-github-uses-ebpf-to-improve-deployment-safety/",
+    "desc": "Learn how Github uses eBPF to detect and prevent circular dependencies in its deployment tooling.",
+    "thumb": "https://github.blog/wp-content/uploads/2026/01/4ba0cd42388a255e04c78e5143548f22e577d68e0f15f68e6a3c76c18b927981-1920x1080-1.png?resize=400%2C212",
+    "id": 12
   },
   {
-    "id": 19,
-    "domain": "github.com/blog",
-    "type": "video",
-    "title": "github.com/blog video",
-    "url": "https://www.youtube.com/embed/sCr_gb8rdEI?feature=oembed&autoplay=1",
-    "desc": "Embedded video",
+    "domain": "github.blog",
+    "type": "page",
+    "title": "The uphill climb of making diff lines performant",
+    "url": "https://github.blog/engineering/architecture-optimization/the-uphill-climb-of-making-diff-lines-performant/",
+    "desc": "The path to better performance is often found in simplicity.",
     "thumb": null,
-    "duration": "Video"
+    "id": 13
+  },
+  {
+    "domain": "github.blog",
+    "type": "page",
+    "title": "Continuous AI for accessibility: How GitHub transforms feedback into inclusion",
+    "url": "https://github.blog/ai-and-ml/github-copilot/continuous-ai-for-accessibility-how-github-transforms-feedback-into-inclusion/",
+    "desc": "AI automates triage for accessibility feedback, allowing us to focus on fixing barriers—turning a chaotic backlog into continuous, rapid resolutions.",
+    "thumb": null,
+    "id": 14
+  },
+  {
+    "domain": "github.blog",
+    "type": "page",
+    "title": "How we rebuilt the search architecture for high availability in GitHub Enterprise Server",
+    "url": "https://github.blog/engineering/architecture-optimization/how-we-rebuilt-the-search-architecture-for-high-availability-in-github-enterprise-server/",
+    "desc": "Here’s how we made the search experience better, faster, and more resilient for GHES customers.",
+    "thumb": null,
+    "id": 15
+  },
+  {
+    "domain": "github.blog",
+    "type": "image",
+    "title": "GitHub availability report: April 2026",
+    "url": "https://github.blog/news-insights/company-news/github-availability-report-april-2026/",
+    "desc": "In April, we experienced 10 incidents that resulted in degraded performance across GitHub services.",
+    "thumb": "https://github.blog/wp-content/uploads/2025/08/wallpaper-generic-.png?resize=200%2C200",
+    "id": 16
+  },
+  {
+    "domain": "github.blog",
+    "type": "page",
+    "title": "GitHub Copilot individual plans: Introducing flex allotments in Pro and Pro+, and a new Max plan",
+    "url": "https://github.blog/news-insights/company-news/github-copilot-individual-plans-introducing-flex-allotments-in-pro-and-pro-and-a-new-max-plan/",
+    "desc": "Starting June 1, our lineup of individual plans will update based on your feedback.",
+    "thumb": null,
+    "id": 17
+  },
+  {
+    "domain": "github.blog",
+    "type": "image",
+    "title": "Why age assurance laws matter for developers",
+    "url": "https://github.blog/news-insights/policy-news-and-insights/why-age-assurance-laws-matter-for-developers/",
+    "desc": "Youth safety requirements are moving down the tech stack to operating systems and app stores—raising new questions for open source developers.",
+    "thumb": "https://github.blog/wp-content/uploads/2026/01/4ba0cd42388a255e04c78e5143548f22e577d68e0f15f68e6a3c76c18b927981-1920x1080-1.png?resize=200%2C200",
+    "id": 18
+  },
+  {
+    "domain": "github.blog",
+    "type": "image",
+    "title": "How researchers are using GitHub Innovation Graph data to reveal the “digital complexity” of nations",
+    "url": "https://github.blog/news-insights/policy-news-and-insights/how-researchers-are-using-github-innovation-graph-data-to-reveal-the-digital-complexity-of-nations/",
+    "desc": "Researchers share in an interview how they used GitHub data to predict GDP, inequality, and emissions in ways that traditional economic data misses, along with our Q4 2025 data release.",
+    "thumb": "https://github.blog/wp-content/uploads/2023/09/screencapture-innovationgraph-github-2023-09-20-15_44_54-1-e1755122432792.png?resize=200%2C200",
+    "id": 19
+  },
+  {
+    "domain": "github.blog",
+    "type": "image",
+    "title": "An update on GitHub availability",
+    "url": "https://github.blog/news-insights/company-news/an-update-on-github-availability/",
+    "desc": "Here’s what we’ve done—and what we’re still doing—to improve our availability and reliability.",
+    "thumb": "https://github.blog/wp-content/uploads/2025/07/wallpaper-generic-blue.png?resize=200%2C200",
+    "id": 20
   }
 ]
