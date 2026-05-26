@@ -275,37 +275,23 @@
 </div>
 
 <script>
-    // --- 1. CONFIGURATION & MOCK INDEX ---
-    const sites = [
-        "wwe.com",
-        "youtube.com",
-        "mygithub.github.io"
-    ];
+    // --- 1. CONFIGURATION & LIVE INDEX ---
 
-    // Helper to generate SVG data URIs internally to avoid external image APIs
-    const generateSVG = (text, cls) => `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225"><rect width="100%" height="100%" fill="%23222" /><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%23fff" font-family="sans-serif" font-size="24" opacity="0.5">${text}</text></svg>`;
+    let secureIndex = [];
 
-    // Internal Database (only includes data from whitelisted sites)
-    const mockDatabase = [
-        // WWE.COM
-        { id: 1, domain: "wwe.com", type: "page", title: "WrestleMania 42 Official Results", url: "https://wwe.com/wrestlemania", desc: "Get the complete results, highlights, and news from the showcase of the immortals.", thumb: null },
-        { id: 2, domain: "wwe.com", type: "video", title: "Top 10 Royal Rumble Moments", url: "https://wwe.com/video/rr-top10", desc: "Watch the most shocking returns and eliminations in Royal Rumble history.", thumb: generateSVG("WWE Ring", "bg-wwe"), duration: "10:45" },
-        { id: 3, domain: "wwe.com", type: "image", title: "Undisputed Champion Celebration", url: "https://wwe.com/photos/champ", desc: "Gallery: The crowning moment of the new era.", thumb: generateSVG("Champion Graphic", "bg-wwe") },
-        
-        // YOUTUBE.COM
-        { id: 4, domain: "youtube.com", type: "video", title: "Stylized Strategy Games - 2026 Review", url: "https://youtube.com/watch?v=xyz", desc: "Deep dive into intelligent mechanics and stylized art in modern strategy gaming.", thumb: generateSVG("Strategy UI", "bg-yt"), duration: "24:12" },
-        { id: 5, domain: "youtube.com", type: "page", title: "GameDev Channel Home", url: "https://youtube.com/@gamedev", desc: "Subscribe for daily game mechanics, lore improvements, and creative twists.", thumb: null },
-        { id: 6, domain: "youtube.com", type: "image", title: "Channel Banner Design", url: "https://youtube.com/channel/banner", desc: "High res channel artwork.", thumb: generateSVG("Banner Art", "bg-yt") },
-        { id: 7, domain: "youtube.com", type: "video", title: "Fast Paced Action Mechanics Tutorial", url: "https://youtube.com/watch?v=abc", desc: "Learn how to make short, sharp, and precise movement systems.", thumb: generateSVG("Action Code", "bg-yt"), duration: "08:30" },
-
-        // MYGITHUB.GITHUB.IO
-        { id: 8, domain: "mygithub.github.io", type: "page", title: "Portfolio: AI & Strategy Game Concepts", url: "https://mygithub.github.io", desc: "Showcase of game design concepts, lore ideas, and web development projects.", thumb: null },
-        { id: 9, domain: "mygithub.github.io", type: "image", title: "Project Screenshot - Minimal Search", url: "https://mygithub.github.io/assets/search-ui.png", desc: "Dark theme search engine UI concept.", thumb: generateSVG("Search UI Mockup", "bg-gh") },
-        { id: 10, domain: "mygithub.github.io", type: "page", title: "Documentation: Intelligent AI Twists", url: "https://mygithub.github.io/docs", desc: "How to program NPCs that adapt to player strategy.", thumb: null }
-    ];
-
-    // Filter DB strictly against the whitelist immediately
-    const secureIndex = mockDatabase.filter(item => sites.includes(item.domain));
+    async function loadIndex() {
+        try {
+            const res = await fetch("index.json");
+            if (!res.ok) throw new Error("index.json not found");
+            const data = await res.json();
+            // Normalize: support both array and {results:[...]} shape
+            secureIndex = Array.isArray(data) ? data : (data.results || data.pages || []);
+            renderResults();
+        } catch (e) {
+            document.getElementById('resultsContainer').innerHTML =
+                `<div class="no-results">⚠️ Could not load index.json<br><small style="font-size:12px;opacity:0.5">${e.message}</small></div>`;
+        }
+    }
 
     // --- 2. STATE MANAGEMENT ---
     let currentTab = 'all';
@@ -361,23 +347,30 @@
         // 1. Filter by Query
         let results = secureIndex;
         if (currentQuery) {
-            results = results.filter(item => 
-                item.title.toLowerCase().includes(currentQuery) || 
-                item.desc.toLowerCase().includes(currentQuery) ||
-                item.domain.toLowerCase().includes(currentQuery)
-            );
+            results = results.filter(item => {
+                const n = normalizeItem(item);
+                return n.title.toLowerCase().includes(currentQuery) || 
+                       n.desc.toLowerCase().includes(currentQuery) ||
+                       n.domain.toLowerCase().includes(currentQuery);
+            });
         }
 
         // 2. Filter by Tab
         if (currentTab === 'images') {
-            results = results.filter(item => item.type === 'image');
+            results = results.filter(item => {
+                const n = normalizeItem(item);
+                return n.type === 'image' || (n.thumb && n.type !== 'video');
+            });
         } else if (currentTab === 'videos') {
-            results = results.filter(item => item.type === 'video');
+            results = results.filter(item => {
+                const n = normalizeItem(item);
+                return n.type === 'video';
+            });
         }
 
         // 3. Render
         if (results.length === 0) {
-            resultsContainer.innerHTML = `<div class="no-results">No results found for "${currentQuery}"</div>`;
+            resultsContainer.innerHTML = `<div class="no-results">No results found${currentQuery ? ` for "${currentQuery}"` : ''}</div>`;
             return;
         }
 
@@ -388,9 +381,23 @@
         }
     }
 
+    function normalizeItem(item) {
+        // Handle different field names crawler might output
+        return {
+            title: item.title || item.name || "Untitled",
+            desc: item.desc || item.description || item.snippet || "",
+            url: item.url || item.link || "#",
+            domain: item.domain || item.source || (item.url ? new URL(item.url).hostname.replace("www.","") : "unknown"),
+            type: item.type || (item.duration ? "video" : (item.thumb || item.thumbnail ? "image" : "page")),
+            thumb: item.thumb || item.thumbnail || item.image || null,
+            duration: item.duration || null
+        };
+    }
+
     function renderList(results) {
         let delay = 0;
-        results.forEach((item, index) => {
+        results.forEach((raw) => {
+            const item = normalizeItem(raw);
             const card = document.createElement('div');
             card.className = 'result-card';
             card.style.animationDelay = `${delay}s`;
@@ -402,17 +409,17 @@
             if (item.type === 'video' && item.thumb) {
                 mediaHTML = `
                     <div class="thumbnail-container">
-                        <img src="${item.thumb}" alt="Thumbnail">
+                        <img src="${item.thumb}" loading="lazy" onerror="this.style.display='none'" alt="Thumbnail">
                         <div class="play-btn">
                             <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                         </div>
-                        <div class="video-duration">${item.duration}</div>
+                        ${item.duration ? `<div class="video-duration">${item.duration}</div>` : ''}
                     </div>
                 `;
-            } else if (item.type === 'image' && item.thumb) {
+            } else if (item.thumb) {
                 mediaHTML = `
                     <div class="thumbnail-container">
-                        <img src="${item.thumb}" alt="Thumbnail">
+                        <img src="${item.thumb}" loading="lazy" onerror="this.style.display='none'" alt="Thumbnail">
                     </div>
                 `;
             }
@@ -422,7 +429,7 @@
                     <span class="domain-icon">${domainInitial}</span>
                     ${item.domain}
                 </div>
-                <a href="#" class="result-title">${item.title}</a>
+                <a href="${item.url}" target="_blank" class="result-title">${item.title}</a>
                 <div class="result-desc">${item.desc}</div>
                 ${mediaHTML}
             `;
@@ -435,7 +442,8 @@
         grid.className = 'images-grid';
         let delay = 0;
 
-        results.forEach(item => {
+        results.forEach(raw => {
+            const item = normalizeItem(raw);
             const card = document.createElement('div');
             card.className = 'image-card';
             card.style.animationDelay = `${delay}s`;
@@ -445,7 +453,7 @@
 
             card.innerHTML = `
                 <div class="thumbnail-container" style="aspect-ratio: 1/1;">
-                    <img src="${item.thumb}" alt="Thumbnail" style="height: 100%;">
+                    <img src="${item.thumb}" loading="lazy" onerror="this.style.display='none'" alt="Thumbnail" style="height: 100%;">
                 </div>
                 <div class="domain-tag">
                     <span class="domain-icon" style="width:12px;height:12px;font-size:8px;">${domainInitial}</span>
@@ -496,7 +504,7 @@
     // Initialize
     window.addEventListener('load', () => {
         initTabIndicator();
-        renderResults();
+        loadIndex();
         input.focus();
     });
 </script>
