@@ -415,7 +415,23 @@
     // ─── NORMALIZE ────────────────────────────────────────────
     function stripHtml(str) {
         if (!str) return '';
-        return str.replace(/<[^>]*>/g, '').trim();
+        // Remove HTML tags
+        let s = str.replace(/<[^>]*>/g, '');
+        // Split by newlines, filter empty/whitespace lines, take the last meaningful chunk
+        // This handles tokyomotion "HD\n\n\n02:56\n\n\nActual Title" pattern
+        const lines = s.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        if (lines.length === 0) return '';
+        // The real title is usually the last non-empty line
+        // But also extract duration if present (e.g. "02:56")
+        const durationLine = lines.find(l => /^\d{1,2}:\d{2}$/.test(l));
+        const titleLine = lines[lines.length - 1];
+        return titleLine || lines[0];
+    }
+
+    function extractDuration(str) {
+        if (!str) return null;
+        const match = str.match(/\b(\d{1,2}:\d{2})\b/);
+        return match ? match[1] : null;
     }
 
     function extractThumb(item) {
@@ -442,15 +458,16 @@
         const rawTitle = item.title || item.name || 'Untitled';
         const rawDesc  = item.desc  || item.description || item.snippet || '';
         const thumb    = extractThumb(item);
+        const duration = item.duration || extractDuration(rawTitle) || null;
 
         return {
             title:    stripHtml(rawTitle),
             desc:     stripHtml(rawDesc),
             url:      item.url || item.link || '#',
             domain:   item.domain || item.source || (item.url ? (() => { try { return new URL(item.url).hostname.replace('www.',''); } catch(e) { return 'unknown'; } })() : 'unknown'),
-            type:     item.type || (item.duration ? 'video' : (thumb ? 'image' : 'page')),
+            type:     item.type || (duration || thumb ? 'video' : 'page'),
             thumb:    thumb,
-            duration: item.duration || null
+            duration: duration
         };
     }
 
@@ -539,18 +556,4 @@
         results.forEach(raw => {
             const item = normalizeItem(raw);
             if (!item.thumb) return; // skip image cards with no thumb
-            const card = document.createElement('div');
-            card.className = 'image-card';
-            card.style.animationDelay = `${delay}s`;
-            delay = Math.min(delay + 0.05, 0.5);
-
-            const domainInitial = item.domain.charAt(0).toUpperCase();
-            card.innerHTML = `
-                <a href="${item.url}" target="_blank">
-                    <div class="thumbnail-container" style="aspect-ratio:1/1;">
-                        <img src="${item.thumb}" loading="lazy" onerror="this.parentElement.parentElement.parentElement.style.display='none'" alt="" style="height:100%;">
-                    </div>
-                </a>
-                <div class="domain-tag" style="padding:6px 8px;">
-                    <span class="domain-icon" style="width:12px;height:12px;font-size:8px;">${domainInitial}</span>
-                    <span
+            const card = document.createElem
