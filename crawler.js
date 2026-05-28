@@ -1,4 +1,5 @@
 const cheerio = require("cheerio");
+const fs = require("fs");
 
 global.fetch = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
@@ -22,86 +23,100 @@ const HEADERS = {
 };
 
 function absolute(url, base) {
-  try {
-    return new URL(url, base).href;
-  } catch {
-    return null;
-  }
+  try { return new URL(url, base).href; }
+  catch { return null; }
 }
 
-async function crawl(url) {
+function stripHtml(str) {
+  return (str || '').replace(/<[^>]*>/g, '').trim();
+}
+
+function extractThumb(el, $, base) {
+  // Try common thumb patterns
+  const img = $(el).find("img").first();
+  const src =
+    img.attr("src") ||
+    img.attr("data-src") ||
+    img.attr("data-lazy-src") ||
+    img.attr("data-original") ||
+    $(el).find("[data-thumb]").attr("data-thumb") ||
+    null;
+
+  if (!src) return null;
+  if (src.startsWith("data:")) return null;  // skip base64/SVG placeholders
+  return absolute(src, base);
+}
+
+async function crawl(siteUrl) {
   try {
-    console.log("Crawling:", url);
+    console.log("Crawling:", siteUrl);
 
-    const res = await fetch(url, {
-      headers: HEADERS
-    });
-
+    const res = await fetch(siteUrl, { headers: HEADERS });
     const html = await res.text();
-
     const $ = cheerio.load(html);
 
     const results = [];
+    const seen = new Set();
     let id = Date.now();
 
     $("a").each((i, el) => {
-      const href = $(el).attr("href");
-      const text = $(el).text().trim();
+      const href  = $(el).attr("href");
+      const text  = stripHtml($(el).text());
 
-      if (!href || !text) return;
-      if (text.length < 3) return;
+      if (!href || !text || text.length < 3) return;
 
-      const full = absolute(href, url);
-
+      const full = absolute(href, siteUrl);
       if (!full) return;
+      if (seen.has(full)) return;
+      seen.add(full);
 
-      const img =
-        $(el).find("img").attr("src") ||
-        $(el).find("img").attr("data-src") ||
-        "";
+      const thumb = extractThumb(el, $, siteUrl);
+      const type  = thumb ? "video" : "page";
 
       results.push({
-        id: id++,
-        title: text,
-        url: full,
-        domain: new URL(url).hostname,
-        thumb: absolute(img, url),
-        type: "video"
+        id:     id++,
+        title:  text,
+        desc:   text,
+        url:    full,
+        domain: new URL(siteUrl).hostname.replace("www.", ""),
+        thumb:  thumb,
+        type:   type
       });
     });
 
-    const clean = [];
-    const seen = new Set();
+    console.log(`Found ${results.length} items from ${siteUrl}`);
 
-    for (const item of results) {
-      if (seen.has(item.url)) continue;
-      seen.add(item.url);
-      clean.push(item);
-    }
-
-    console.log("Found:", clean.length);
-
-    if (clean.length > 0) {
-      await fetch(`${MEILI_URL}/indexes/movies/documents`, {
+    if (results.length > 0) {
+      // Upload to Meilisearch using Bearer auth (not X-Meili-API-Key)
+      const uploadRes = await fetch(`${MEILI_URL}/indexes/movies/documents`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${MEILI_KEY}`
+          "Content-Type":  "application/json",
+          "Authorization": `Bearer ${MEILI_KEY}`
         },
-        body: JSON.stringify(clean)
+        body: JSON.stringify(results)
       });
-
-      console.log("Uploaded to Meilisearch");
+      const uploadData = await uploadRes.json();
+      console.log("Meilisearch response:", JSON.stringify(uploadData));
     }
+
+    return results;
+
   } catch (e) {
-    console.log("FAILED:", url, e.message);
+    console.log("FAILED:", siteUrl, e.message);
+    return [];
   }
 }
 
 (async () => {
+  const allResults = [];
+
   for (const site of sites) {
-    await crawl(site);
+    const r = await crawl(site);
+    allResults.push(...r);
   }
 
-  console.log("DONE");
+  // Save combined index.json
+  fs.writeFileSync("index.json", JSON.stringify(allResults, null, 2));
+  console.log(`DONE — ${allResults.length} total items saved to index.json`);
 })();
