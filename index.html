@@ -39,7 +39,6 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
-        /* Search Header */
         .search-header {
             padding: 16px;
             background: var(--bg-color);
@@ -76,7 +75,6 @@
 
         .search-input::placeholder { color: var(--text-muted); }
 
-        /* Tabs */
         .tabs {
             display: flex;
             padding: 12px 16px 0;
@@ -105,7 +103,6 @@
             transition: transform 0.4s var(--bouncy-ease), width 0.4s var(--bouncy-ease);
         }
 
-        /* Results Container */
         .scroll-container {
             flex: 1;
             overflow-y: auto;
@@ -118,11 +115,9 @@
             transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
-        /* Hiding scrollbar */
         .scroll-container::-webkit-scrollbar { display: none; }
         .scroll-container { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Result Cards */
         .result-card {
             background: var(--surface-color);
             border-radius: 16px;
@@ -218,7 +213,6 @@
 
         .play-btn svg { width: 16px; height: 16px; fill: white; margin-left: 2px; }
 
-        /* Grid for Images Tab */
         .images-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -238,12 +232,18 @@
             margin-top: 40px; font-size: 16px;
         }
 
-        /* Generate SVG Backgrounds internally for demo */
-        .bg-wwe { background: linear-gradient(135deg, #111, #400); }
-        .bg-yt { background: linear-gradient(135deg, #411, #200); }
-        .bg-gh { background: linear-gradient(135deg, #121, #012); }
+        .status-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 99px;
+            margin-left: auto;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+        .status-live { background: rgba(94,172,94,0.15); color: #5eac5e; }
+        .status-local { background: rgba(172,140,94,0.15); color: #ac8c5e; }
+        .status-loading { background: rgba(94,129,172,0.15); color: #5e81ac; }
     </style>
-<script src="https://cdn.jsdelivr.net/npm/meilisearch@0.39.0/dist/bundles/meilisearch.umd.js"></script>
 </head>
 <body>
 
@@ -255,12 +255,13 @@
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
             <input type="text" id="searchInput" class="search-input" placeholder="Search..." autocomplete="off">
-            <button id="clearBtn" style="display:none; padding: 4px;">
+            <button id="clearBtn" style="display:none; padding: 4px; background:none; border:none; cursor:pointer;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
             </button>
+            <span id="statusBadge" class="status-badge status-loading">...</span>
         </div>
         <div class="tabs">
             <div class="tab active" data-tab="all" onclick="switchTab('all', this)">All</div>
@@ -276,75 +277,131 @@
 </div>
 
 <script>
-    // --- 1. CONFIGURATION & LIVE INDEX ---
+    // ─── CONFIG ───────────────────────────────────────────────
+    const MEILI_HOST = 'https://meilisearch-production-7a96.up.railway.app';
+    const MEILI_KEY  = 'strongpassword123';
+    const MEILI_INDEX = 'movies';
+    const INDEX_JSON  = './index.json';
+    // ──────────────────────────────────────────────────────────
 
     let secureIndex = [];
+    let dataSource  = 'none'; // 'meili' | 'local'
+    let isSearching = false;
+    let searchTimer = null;
 
-    async function loadIndex() {
-        try {
-            const client = new MeiliSearch({
-                host: 'https://meilisearch-production-7a96.up.railway.app',
-                apiKey: 'strongpassword123'
-            });
-
-            const index = client.index('movies');
-
-            let query = currentQuery || '';
-
-            const res = await index.search(query, {
-                limit: 1000
-            });
-
-            secureIndex = res.hits || [];
-            renderResults();
-
-        } catch (e) {
-            console.error(e);
-
-            document.getElementById('resultsContainer').innerHTML =
-                `<div class="no-results">
-                    ⚠️ Meilisearch Error
-                    <br>
-                    <small style="font-size:12px;opacity:0.6">${e.message}</small>
-                </div>`;
-        }    }
-
-    // --- 2. STATE MANAGEMENT ---
-    let currentTab = 'all';
+    // ─── STATE ────────────────────────────────────────────────
+    let currentTab   = 'all';
     let currentQuery = '';
 
-    const input = document.getElementById('searchInput');
-    const clearBtn = document.getElementById('clearBtn');
+    const input            = document.getElementById('searchInput');
+    const clearBtn         = document.getElementById('clearBtn');
     const resultsContainer = document.getElementById('resultsContainer');
-    const tabIndicator = document.getElementById('tabIndicator');
+    const tabIndicator     = document.getElementById('tabIndicator');
+    const statusBadge      = document.getElementById('statusBadge');
 
-    // --- 3. UI LOGIC & ANIMATIONS ---
+    // ─── MEILISEARCH: raw fetch (no SDK) ─────────────────────
+    // The SDK sometimes sends X-Meili-API-Key header which some
+    // proxies reject. Use raw fetch with Bearer directly.
+    async function meiliSearch(query) {
+        const url = `${MEILI_HOST}/indexes/${MEILI_INDEX}/search`;
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${MEILI_KEY}`
+            },
+            body: JSON.stringify({
+                q: query || '',
+                limit: 500
+            })
+        });
+        if (!resp.ok) throw new Error(`Meili HTTP ${resp.status}`);
+        const data = await resp.json();
+        if (data.message) throw new Error(data.message);
+        return data.hits || [];
+    }
 
+    // ─── LOCAL JSON FALLBACK ──────────────────────────────────
+    async function loadLocalIndex() {
+        const resp = await fetch(INDEX_JSON);
+        if (!resp.ok) throw new Error('index.json not found');
+        return await resp.json();
+    }
+
+    // ─── LOAD + SEARCH ────────────────────────────────────────
+    async function loadIndex() {
+        if (isSearching) return;
+        isSearching = true;
+        setStatus('loading');
+
+        try {
+            // Try Meilisearch first (direct fetch with Bearer)
+            const hits = await meiliSearch(currentQuery);
+            secureIndex = hits;
+            dataSource  = 'meili';
+            setStatus('live');
+        } catch (meiliErr) {
+            console.warn('Meilisearch failed:', meiliErr.message, '— falling back to index.json');
+            try {
+                const localData = await loadLocalIndex();
+                secureIndex = localData;
+                dataSource  = 'local';
+                setStatus('local');
+            } catch (localErr) {
+                console.error('Local fallback also failed:', localErr.message);
+                secureIndex = [];
+                setStatus('local');
+                resultsContainer.innerHTML = `<div class="no-results">⚠️ Could not load data<br><small style="font-size:11px;opacity:0.5">${meiliErr.message}</small></div>`;
+                isSearching = false;
+                return;
+            }
+        }
+
+        isSearching = false;
+        renderResults();
+    }
+
+    function setStatus(state) {
+        statusBadge.className = 'status-badge';
+        if (state === 'live')    { statusBadge.classList.add('status-live');    statusBadge.textContent = '● Live'; }
+        else if (state === 'local') { statusBadge.classList.add('status-local'); statusBadge.textContent = '● Local'; }
+        else                     { statusBadge.classList.add('status-loading'); statusBadge.textContent = '...'; }
+    }
+
+    // ─── TAB LOGIC ────────────────────────────────────────────
     function initTabIndicator() {
         const activeTab = document.querySelector('.tab.active');
         updateTabIndicator(activeTab);
     }
 
     function updateTabIndicator(element) {
-        tabIndicator.style.width = `${element.offsetWidth}px`;
-        tabIndicator.style.transform = `translateX(${element.offsetLeft - 16}px)`; // -16 for padding
+        tabIndicator.style.width     = `${element.offsetWidth}px`;
+        tabIndicator.style.transform = `translateX(${element.offsetLeft - 16}px)`;
     }
 
     window.switchTab = function(tabName, element) {
-        if(currentTab === tabName) return;
-        
+        if (currentTab === tabName) return;
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         element.classList.add('active');
         updateTabIndicator(element);
-        
         currentTab = tabName;
         renderResults();
     };
 
-    input.addEventListener('input', async (e) => {
+    // ─── INPUT HANDLER ────────────────────────────────────────
+    input.addEventListener('input', (e) => {
         currentQuery = e.target.value.trim().toLowerCase();
         clearBtn.style.display = currentQuery.length > 0 ? 'block' : 'none';
-        await loadIndex();
+
+        // If using local data: filter instantly, no fetch needed
+        if (dataSource === 'local') {
+            renderResults();
+            return;
+        }
+
+        // For Meilisearch: debounce 300ms
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => loadIndex(), 300);
     });
 
     clearBtn.addEventListener('click', () => {
@@ -355,23 +412,66 @@
         renderResults();
     });
 
-    // --- 4. SEARCH ENGINE LOGIC ---
+    // ─── NORMALIZE ────────────────────────────────────────────
+    function stripHtml(str) {
+        if (!str) return '';
+        return str.replace(/<[^>]*>/g, '').trim();
+    }
 
+    function extractThumb(item) {
+        // Priority: real URL > extract from img tag in title/desc > null
+        let thumb = item.thumb || item.thumbnail || item.image || null;
+
+        // Skip empty SVG placeholders from crawler
+        if (thumb && (thumb.startsWith('data:image/svg') || thumb === '')) {
+            thumb = null;
+        }
+
+        // Try to extract real image URL from title/desc HTML
+        if (!thumb) {
+            const srcMatch = (item.title || item.desc || '').match(/src=["']([^"']+)["']/);
+            if (srcMatch && !srcMatch[1].startsWith('data:')) {
+                thumb = srcMatch[1];
+            }
+        }
+
+        return thumb;
+    }
+
+    function normalizeItem(item) {
+        const rawTitle = item.title || item.name || 'Untitled';
+        const rawDesc  = item.desc  || item.description || item.snippet || '';
+        const thumb    = extractThumb(item);
+
+        return {
+            title:    stripHtml(rawTitle),
+            desc:     stripHtml(rawDesc),
+            url:      item.url || item.link || '#',
+            domain:   item.domain || item.source || (item.url ? (() => { try { return new URL(item.url).hostname.replace('www.',''); } catch(e) { return 'unknown'; } })() : 'unknown'),
+            type:     item.type || (item.duration ? 'video' : (thumb ? 'image' : 'page')),
+            thumb:    thumb,
+            duration: item.duration || null
+        };
+    }
+
+    // ─── RENDER ───────────────────────────────────────────────
     function renderResults() {
         resultsContainer.innerHTML = '';
-        
-        // 1. Filter by Query
+
         let results = secureIndex;
-        if (currentQuery) {
+
+        // Filter by query (only needed for local data; Meili already filtered)
+        if (currentQuery && dataSource === 'local') {
+            const q = currentQuery.toLowerCase();
             results = results.filter(item => {
                 const n = normalizeItem(item);
-                return n.title.toLowerCase().includes(currentQuery) || 
-                       n.desc.toLowerCase().includes(currentQuery) ||
-                       n.domain.toLowerCase().includes(currentQuery);
+                return n.title.toLowerCase().includes(q) ||
+                       n.desc.toLowerCase().includes(q)  ||
+                       n.domain.toLowerCase().includes(q);
             });
         }
 
-        // 2. Filter by Tab
+        // Filter by tab
         if (currentTab === 'images') {
             results = results.filter(item => {
                 const n = normalizeItem(item);
@@ -384,9 +484,8 @@
             });
         }
 
-        // 3. Render
         if (results.length === 0) {
-            resultsContainer.innerHTML = `<div class="no-results">No results found${currentQuery ? ` for "${currentQuery}"` : ''}</div>`;
+            resultsContainer.innerHTML = `<div class="no-results">No results found${currentQuery ? ` for "<b>${currentQuery}</b>"` : ''}</div>`;
             return;
         }
 
@@ -397,19 +496,6 @@
         }
     }
 
-    function normalizeItem(item) {
-        // Handle different field names crawler might output
-        return {
-            title: item.title || item.name || "Untitled",
-            desc: item.desc || item.description || item.snippet || "",
-            url: item.url || item.link || "#",
-            domain: item.domain || item.source || (item.url ? new URL(item.url).hostname.replace("www.","") : "unknown"),
-            type: item.type || (item.duration ? "video" : (item.thumb || item.thumbnail ? "image" : "page")),
-            thumb: item.thumb || item.thumbnail || item.image || null,
-            duration: item.duration || null
-        };
-    }
-
     function renderList(results) {
         let delay = 0;
         results.forEach((raw) => {
@@ -417,27 +503,19 @@
             const card = document.createElement('div');
             card.className = 'result-card';
             card.style.animationDelay = `${delay}s`;
-            delay += 0.05;
+            delay = Math.min(delay + 0.05, 0.5); // cap delay so large lists don't lag
 
             const domainInitial = item.domain.charAt(0).toUpperCase();
 
             let mediaHTML = '';
-            if (item.type === 'video' && item.thumb) {
+            if (item.thumb) {
+                const isVideo = item.type === 'video';
                 mediaHTML = `
                     <div class="thumbnail-container">
-                        <img src="${item.thumb}" loading="lazy" onerror="this.style.display='none'" alt="Thumbnail">
-                        <div class="play-btn">
-                            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                        </div>
+                        <img src="${item.thumb}" loading="lazy" onerror="this.parentElement.style.display='none'" alt="">
+                        ${isVideo ? `<div class="play-btn"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>` : ''}
                         ${item.duration ? `<div class="video-duration">${item.duration}</div>` : ''}
-                    </div>
-                `;
-            } else if (item.thumb) {
-                mediaHTML = `
-                    <div class="thumbnail-container">
-                        <img src="${item.thumb}" loading="lazy" onerror="this.style.display='none'" alt="Thumbnail">
-                    </div>
-                `;
+                    </div>`;
             }
 
             card.innerHTML = `
@@ -446,9 +524,9 @@
                     ${item.domain}
                 </div>
                 <a href="${item.url}" target="_blank" class="result-title">${item.title}</a>
-                <div class="result-desc">${item.desc}</div>
-                ${mediaHTML}
-            `;
+                ${item.desc ? `<div class="result-desc">${item.desc}</div>` : ''}
+                ${mediaHTML}`;
+
             resultsContainer.appendChild(card);
         });
     }
@@ -460,70 +538,19 @@
 
         results.forEach(raw => {
             const item = normalizeItem(raw);
+            if (!item.thumb) return; // skip image cards with no thumb
             const card = document.createElement('div');
             card.className = 'image-card';
             card.style.animationDelay = `${delay}s`;
-            delay += 0.05;
-            
+            delay = Math.min(delay + 0.05, 0.5);
+
             const domainInitial = item.domain.charAt(0).toUpperCase();
-
             card.innerHTML = `
-                <div class="thumbnail-container" style="aspect-ratio: 1/1;">
-                    <img src="${item.thumb}" loading="lazy" onerror="this.style.display='none'" alt="Thumbnail" style="height: 100%;">
-                </div>
-                <div class="domain-tag">
+                <a href="${item.url}" target="_blank">
+                    <div class="thumbnail-container" style="aspect-ratio:1/1;">
+                        <img src="${item.thumb}" loading="lazy" onerror="this.parentElement.parentElement.parentElement.style.display='none'" alt="" style="height:100%;">
+                    </div>
+                </a>
+                <div class="domain-tag" style="padding:6px 8px;">
                     <span class="domain-icon" style="width:12px;height:12px;font-size:8px;">${domainInitial}</span>
-                    ${item.domain}
-                </div>
-            `;
-            grid.appendChild(card);
-        });
-        resultsContainer.appendChild(grid);
-    }
-
-    // --- 5. RUBBER BAND STRETCHING ANIMATION LOGIC ---
-    const scrollElem = document.getElementById('scrollContainer');
-    let startY = 0;
-    let currentY = 0;
-    let isDragging = false;
-
-    scrollElem.addEventListener('touchstart', (e) => {
-        if(scrollElem.scrollTop === 0) {
-            startY = e.touches[0].clientY;
-            isDragging = true;
-            scrollElem.style.transition = 'none';
-        }
-    }, {passive: true});
-
-    scrollElem.addEventListener('touchmove', (e) => {
-        if(!isDragging) return;
-        currentY = e.touches[0].clientY;
-        const diff = currentY - startY;
-        
-        // Only stretch if pulling down at the very top
-        if (diff > 0 && scrollElem.scrollTop === 0) {
-            // Logarithmic damping for rubber band feel
-            const resistance = 0.4;
-            const stretch = Math.pow(diff * resistance, 0.8);
-            scrollElem.style.transform = `translateY(${stretch}px)`;
-        }
-    }, {passive: true});
-
-    scrollElem.addEventListener('touchend', () => {
-        if(!isDragging) return;
-        isDragging = false;
-        // Snap back with bouncy easing
-        scrollElem.style.transition = 'transform 0.4s var(--bouncy-ease)';
-        scrollElem.style.transform = 'translateY(0)';
-    });
-
-    // Initialize
-    window.addEventListener('load', () => {
-        initTabIndicator();
-        loadIndex();
-        input.focus();
-    });
-</script>
-
-</body>
-</html>
+                    <span
