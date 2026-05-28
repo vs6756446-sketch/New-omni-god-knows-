@@ -1,170 +1,134 @@
+// crawler.js
 const fs = require("fs");
 const cheerio = require("cheerio");
 
 global.fetch = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
-// ─── CONFIG ────────────────────────────────────────────────
 const sites = [
-  {
-    domain: "github.blog",
-    url: "https://github.blog",
-    // CSS selectors for article cards on this site
-    articleSel: "article, .post-card, .article-card, .gh-card",
-    titleSel: "h2, h3, .post-title, .article-title",
-    descSel: "p, .post-excerpt, .article-excerpt",
-    thumbSel: "img",
-    linkSel: "a"
-  },
-  {
-    domain: "reddit.com",
-    url: "https://old.reddit.com/r/programming/",  // old.reddit = static HTML, no JS wall
-    articleSel: ".thing.link",
-    titleSel: "a.title",
-    descSel: ".tagline",
-    thumbSel: "img.thumbnail",
-    linkSel: "a.title"
-  }
+  "https://missav.live",
+  "https://javseen.tv",
+  "https://javgg.net",
+  "https://jav.guru",
+  "https://javdoe.com",
+  "https://javhd.today",
+  "https://tokyomotion.net",
+  "https://7mmtv.sx",
+  "https://javtiful.com",
+  "https://javhay.net",
+  "https://mythav.com",
+  "https://abjav.com",
+  "https://javbraze.com",
+  "https://freejav.guru",
+  "https://javwine.com",
+  "https://avuncens.com",
+  "https://arcjav.com",
+  "https://javhdporn.com",
+  "https://javbest.tv",
+  "https://javtsunami.com"
 ];
 
-const HEADERS = {
-  "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
-  "Accept": "text/html,application/xhtml+xml",
-  "Accept-Language": "en-US,en;q=0.9"
+const headers = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36"
 };
 
-// ─── HELPERS ───────────────────────────────────────────────
-function cleanTitle(t) {
-  if (!t) return "";
-  return t
-    .replace(/More Share Options/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
+function clean(text = "") {
+  return text.replace(/\s+/g, " ").trim();
 }
 
-function isJunkTitle(t) {
-  if (!t || t.length < 5) return true;
-  if (t.toLowerCase().includes("share options")) return true;
-  if (t.toLowerCase().includes("sign in")) return true;
-  if (t.toLowerCase().includes("log in")) return true;
-  return false;
-}
-
-function isJunkUrl(u) {
-  if (!u) return true;
-  if (u.includes("youtube.com/embed")) return true;
-  if (u.includes("accounts.google.com")) return true;
-  if (u.includes("ServiceLogin")) return true;
-  if (u.includes("logo.svg")) return true;
-  if (u.startsWith("data:")) return true;
-  return false;
-}
-
-function resolveUrl(src, base) {
-  if (!src) return null;
-  try { return new URL(src, base).href; } catch { return null; }
-}
-
-// ─── MAIN ──────────────────────────────────────────────────
-async function crawlSite(site) {
-  console.log("Crawling:", site.url);
-  const results = [];
-
-  let html;
+async function crawl(url) {
   try {
-    const res = await fetch(site.url, { headers: HEADERS });
-    if (!res.ok) { console.log("HTTP error:", res.status, site.url); return []; }
-    html = await res.text();
-  } catch (e) {
-    console.log("Fetch failed:", site.domain, e.message);
-    return [];
-  }
+    console.log("Crawling:", url);
 
-  const $ = cheerio.load(html);
+    const res = await fetch(url, { headers });
 
-  // ── 1. Structured article extraction ──
-  let articleCount = 0;
-  $(site.articleSel).each((i, el) => {
-    if (articleCount >= 20) return false; // limit per site
+    if (!res.ok) {
+      console.log("Failed:", res.status);
+      return [];
+    }
 
-    const $el = $(el);
+    const html = await res.text();
+    const $ = cheerio.load(html);
 
-    // Title
-    let title = cleanTitle(
-      $el.find(site.titleSel).first().text() ||
-      $el.find("h1,h2,h3").first().text()
-    );
-    if (isJunkTitle(title)) return;
+    const results = [];
 
-    // URL
-    let url = resolveUrl(
-      $el.find(site.linkSel).first().attr("href") ||
-      $el.find("a").first().attr("href"),
-      site.url
-    );
-    if (!url || isJunkUrl(url)) return;
+    $("a").each((i, el) => {
+      if (results.length >= 80) return false;
 
-    // Desc
-    let desc = $el.find(site.descSel).first().text().trim().slice(0, 200) || "";
+      const href = $(el).attr("href");
+      const title =
+        clean($(el).attr("title")) ||
+        clean($(el).text());
 
-    // Thumb — only real article images, not icons/logos
-    let thumb = null;
-    $el.find(site.thumbSel).each((_, img) => {
-      const src = resolveUrl($(img).attr("src") || $(img).attr("data-src"), site.url);
-      const w = parseInt($(img).attr("width") || "0");
-      const h = parseInt($(img).attr("height") || "0");
-      // skip tiny icons (< 80px)
-      if (src && !src.includes("logo") && !src.includes("icon") && !src.startsWith("data:")) {
-        if (w === 0 || w >= 80) { thumb = src; return false; }
+      const img =
+        $(el).find("img").attr("src") ||
+        $(el).find("img").attr("data-src");
+
+      if (!href || !title || title.length < 4) return;
+
+      if (
+        href.includes("login") ||
+        href.includes("signup") ||
+        href.includes("#")
+      )
+        return;
+
+      let fullUrl;
+
+      try {
+        fullUrl = new URL(href, url).href;
+      } catch {
+        return;
       }
+
+      results.push({
+        domain: new URL(url).hostname,
+        type: img ? "image" : "page",
+        title,
+        url: fullUrl,
+        desc: title,
+        thumb: img
+          ? new URL(img, url).href
+          : null
+      });
     });
 
-    // Type
-    const type = thumb ? "image" : "page";
-
-    results.push({ domain: site.domain, type, title, url, desc, thumb });
-    articleCount++;
-  });
-
-  // ── 2. Fallback: og:meta for the homepage itself ──
-  if (results.length === 0) {
-    const title = cleanTitle(
-      $('meta[property="og:title"]').attr("content") || $("title").text() || site.domain
-    );
-    const desc = (
-      $('meta[name="description"]').attr("content") ||
-      $('meta[property="og:description"]').attr("content") || ""
-    ).slice(0, 200);
-    const thumb = $('meta[property="og:image"]').attr("content") || null;
-    if (!isJunkTitle(title)) {
-      results.push({ domain: site.domain, type: "page", title, url: site.url, desc, thumb });
-    }
+    return results;
+  } catch (e) {
+    console.log("ERROR:", url, e.message);
+    return [];
   }
-
-  console.log(`  → ${results.length} results from ${site.domain}`);
-  return results;
 }
 
-async function buildIndex() {
-  let index = [];
+async function main() {
+  let all = [];
   let id = 1;
 
   for (const site of sites) {
-    const items = await crawlSite(site);
-    items.forEach(item => { item.id = id++; });
-    index = index.concat(items);
+    const data = await crawl(site);
+
+    data.forEach((x) => {
+      x.id = id++;
+    });
+
+    all.push(...data);
   }
 
-  // Final dedupe by URL
   const seen = new Set();
-  index = index.filter(item => {
-    if (seen.has(item.url)) return false;
-    seen.add(item.url);
+
+  all = all.filter((x) => {
+    if (seen.has(x.url)) return false;
+    seen.add(x.url);
     return true;
   });
 
-  fs.writeFileSync("index.json", JSON.stringify(index, null, 2));
-  console.log(`\nDone: ${index.length} clean results indexed`);
+  fs.writeFileSync(
+    "index.json",
+    JSON.stringify(all, null, 2)
+  );
+
+  console.log("DONE:", all.length, "results");
 }
 
-buildIndex();
+main();
