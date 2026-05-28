@@ -31,6 +31,19 @@ function stripHtml(str) {
   return (str || '').replace(/<[^>]*>/g, '').trim();
 }
 
+function cleanTitle(str) {
+  // Remove HTML, then split by newlines, filter empty, take last meaningful line
+  // Handles tokyomotion "HD\n\n02:56\n\nActual Title" pattern
+  const stripped = stripHtml(str);
+  const lines = stripped.split('\n').map(l => l.trim()).filter(l => l.length > 1);
+  return lines.length > 0 ? lines[lines.length - 1] : stripped;
+}
+
+function extractDuration(str) {
+  const match = (str || '').match(/\b(\d{1,2}:\d{2})\b/);
+  return match ? match[1] : null;
+}
+
 function extractThumb(el, $, base) {
   // Try common thumb patterns
   const img = $(el).find("img").first();
@@ -61,9 +74,11 @@ async function crawl(siteUrl) {
 
     $("a").each((i, el) => {
       const href  = $(el).attr("href");
-      const text  = stripHtml($(el).text());
+      const rawText = $(el).text();
+      const title   = cleanTitle(rawText);
+      const duration = extractDuration(rawText);
 
-      if (!href || !text || text.length < 3) return;
+      if (!href || !title || title.length < 3) return;
 
       const full = absolute(href, siteUrl);
       if (!full) return;
@@ -74,13 +89,14 @@ async function crawl(siteUrl) {
       const type  = thumb ? "video" : "page";
 
       results.push({
-        id:     id++,
-        title:  text,
-        desc:   text,
-        url:    full,
-        domain: new URL(siteUrl).hostname.replace("www.", ""),
-        thumb:  thumb,
-        type:   type
+        id:       id++,
+        title:    title,
+        desc:     title,
+        url:      full,
+        domain:   new URL(siteUrl).hostname.replace("www.", ""),
+        thumb:    thumb,
+        type:     thumb ? "video" : "page",
+        duration: duration
       });
     });
 
